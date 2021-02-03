@@ -59,6 +59,7 @@ public:
 // CPU Operations
 int OP_LD_IMM(CPU* cpu, byte param);
 int OP_LD_ZP(CPU* cpu, byte param);
+int OP_LD_ABS(CPU* cpu, byte param);
 
 // PHA
 int OP_PHA_IMM(CPU* cpu, byte param);

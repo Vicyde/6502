@@ -7,15 +7,18 @@ opcode_table opcodes[] = {
     //  { Opcode, Function, Parameter, Cycles }
     // LDA
     { 0xA9, OP_LD_IMM, REG_A, 2 },
-    { 0xA5, OP_LD_ZP, REG_A, 2 },
+    { 0xA5, OP_LD_ZP, REG_A, 3 },
+    { 0xAD, OP_LD_ABS, REG_A, 4 },
 
     // LDX
     { 0xA2, OP_LD_IMM, REG_X, 2 },
-    { 0xA6, OP_LD_ZP, REG_X, 2 },
+    { 0xA6, OP_LD_ZP, REG_X, 3 },
+    { 0xAE, OP_LD_ABS, REG_X, 4 },
 
     // LDY
     { 0xA0, OP_LD_IMM, REG_Y, 2 },
-    { 0xA4, OP_LD_ZP, REG_Y, 2 },
+    { 0xA4, OP_LD_ZP, REG_Y, 3 },
+    { 0xAC, OP_LD_ABS, REG_Y, 4 },
 
     // PHA
     { 0x48, OP_PHA_IMM, REG_A, 3 },
@@ -56,7 +59,7 @@ void CPU::ResetRegisters() {
     reg_a = 0;
     reg_x = 0;
     reg_y = 0;
-    sp = 0x01FF;
+    sp = 0x01FF; // Stack at 0x0100 - 0x01FF
     pc = 0x0600;
     status = 0x0000000b;
 }
@@ -169,7 +172,24 @@ int OP_LD_ZP(CPU* cpu, byte param) {
     if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
     if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
 
-    return 2;
+    return 3;
+}
+
+int OP_LD_ABS(CPU* cpu, byte param) {
+    word address = cpu->ReadNextWord();
+    byte* reg = NULL;
+    switch (param) {
+    case REG_A: reg = &cpu->reg_a; break;
+    case REG_X: reg = &cpu->reg_x; break;
+    case REG_Y: reg = &cpu->reg_y; break;
+    }
+
+    *reg = cpu->memory[address];
+
+    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
+    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+
+    return 4;
 }
 
 int OP_LDA_IMM(CPU* cpu, byte param) {

@@ -6,8 +6,16 @@ opcode_table opcodes[] = {
     // Format:
     //  { Opcode, Function, Parameter, Cycles }
     // LDA
-    { 0xA9, OP_LDA_IMM, REG_A, 2 },
-    { 0xA5, OP_LDA_ZP, REG_A, 2 },
+    { 0xA9, OP_LD_IMM, REG_A, 2 },
+    { 0xA5, OP_LD_ZP, REG_A, 2 },
+
+    // LDX
+    { 0xA2, OP_LD_IMM, REG_X, 2 },
+    { 0xA6, OP_LD_ZP, REG_X, 2 },
+
+    // LDY
+    { 0xA0, OP_LD_IMM, REG_Y, 2 },
+    { 0xA4, OP_LD_ZP, REG_Y, 2 },
 
     // PHA
     { 0x48, OP_PHA_IMM, REG_A, 3 },
@@ -15,8 +23,6 @@ opcode_table opcodes[] = {
     // STA
     { 0x85, OP_STA_ZP, REG_A, 3},
 
-    // LDX
-    { 0xA2, OP_LDX_IMM, REG_X, 2 },
 
     // JMP
     { 0x4C, OP_JMP_ABS, REG_NONE, 3 },
@@ -128,18 +134,43 @@ void LDSetStatus(CPU *cpu, byte const &reg)
     if ((reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
 }
 
-/*
 // Since LDA, LDX and LDY do the same, basically, we could put them all in one function?
 // TODO: Implement
-int OP_LD_IMM(CPU* cpu, byte &reg)
+int OP_LD_IMM(CPU* cpu, byte param)
 {
+    byte* reg = NULL;
     byte value = cpu->ReadNextByte();
-    reg = value;
+    switch (param) {
+    case REG_A: reg = &cpu->reg_a; break;
+    case REG_X: reg = &cpu->reg_x; break;
+    case REG_Y: reg = &cpu->reg_y; break;
+    }
 
-    if (reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
-    if ((reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+    *reg = value;
+
+    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
+    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+
+    return 2;
 }
-*/
+
+
+int OP_LD_ZP(CPU* cpu, byte param) {
+    byte address = cpu->ReadNextByte();
+    byte* reg = NULL;
+    switch (param) {
+    case REG_A: reg = &cpu->reg_a; break;
+    case REG_X: reg = &cpu->reg_x; break;
+    case REG_Y: reg = &cpu->reg_y; break;
+    }
+
+    *reg = cpu->memory[address];
+
+    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
+    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+
+    return 2;
+}
 
 int OP_LDA_IMM(CPU* cpu, byte param) {
     byte value = cpu->ReadNextByte();
@@ -147,6 +178,7 @@ int OP_LDA_IMM(CPU* cpu, byte param) {
     LDSetStatus(cpu, cpu->reg_a);
     return 2;
 }
+
 
 int OP_LDX_IMM(CPU* cpu, byte param) {
     byte value = cpu->ReadNextByte();

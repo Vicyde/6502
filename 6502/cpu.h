@@ -1,10 +1,13 @@
 #ifndef __CPU_H_
 #define __CPU_H_
 
+#include <array>
+
 typedef unsigned char byte;
 typedef unsigned int word;
 
 // Status register bits
+// TODO: Convert to enum
 #define STATUS_BIT_N 1
 #define STATUS_BIT_V 2
 #define STATUS_BIT_B 4
@@ -12,6 +15,17 @@ typedef unsigned int word;
 #define STATUS_BIT_I 16
 #define STATUS_BIT_Z 32
 #define STATUS_BIT_C 64
+
+// Register identifier, for later use
+// TODO: Convert to enum
+#define REG_A       1
+#define REG_X       2
+#define REG_Y       4
+#define REG_STATUS  8
+#define REG_SP      16
+#define REG_PC      32
+
+#define MEM_SIZE 65536
 
 class CPU {
 public:
@@ -22,7 +36,9 @@ public:
     word sp;
     word pc;
 
-    byte memory[65536];
+    //byte memory[MEM_SIZE]; // This is huge! Put on heap?
+    //byte* memory;
+    std::array<byte, MEM_SIZE> memory;
 
     CPU();
     ~CPU();
@@ -34,7 +50,7 @@ public:
     byte ReadNextByte();
     word ReadNextWord();
 
-    void LoadProgramFromArray(byte* program, unsigned int size);
+    void LoadProgramFromArray(byte* program, unsigned int size, int address = 0x0600);
 
     void Execute(unsigned int cycles);
     void Execute();

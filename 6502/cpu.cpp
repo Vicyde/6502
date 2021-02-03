@@ -3,7 +3,8 @@
 
 // Opcode lookup table
 opcode_table opcodes[] = {
-    // Opcode, Function, Cycles
+    // Format:
+    //  { Opcode, Function, Cycles }
 
     // LDA
     { 0xA9, OP_LDA_IMM, 2 },
@@ -21,7 +22,7 @@ opcode_table opcodes[] = {
     // JMP
     { 0x4C, OP_JMP_ABS, 3 },
 };
-
+ 
 
 CPU::CPU()
 {
@@ -34,6 +35,7 @@ CPU::~CPU()
 
 }
 
+// Print register values to standard output
 void CPU::PrintRegisters()
 {
     std::printf("A:\t 0x%.2X\n", reg_a);
@@ -44,6 +46,7 @@ void CPU::PrintRegisters()
     std::printf("SP:\t 0x%.4X\n", sp);
 }
 
+// Resets registers to startup conditions.
 void CPU::ResetRegisters() {
     reg_a = 0;
     reg_x = 0;
@@ -53,34 +56,38 @@ void CPU::ResetRegisters() {
     status = 0;
 }
 
+// Initialize the CPU memory to all 0x00.
 void CPU::ClearMemory() {
-    for (int i = 0; i < sizeof(memory) / sizeof(byte); i++) {
-        memory[i] = 0x00;
+    for (auto it = memory.begin(); it != memory.end(); ++it) {
+        *it = 0x00;
     }
 }
 
+// Reads the next byte in memory and increases the program counter.
 byte CPU::ReadNextByte() {
     byte data = memory[pc];
     pc++;
     return data;
 }
 
+// Reads the next two bytes (word) in memory and increases the program counter twice.
 word CPU::ReadNextWord() {
-    byte hi = memory[pc];
-    pc++;
-    byte lo = memory[pc];
-    pc++;
+    byte hi = memory[pc++];
+    byte lo = memory[pc++];
 
+    // Little endian
     word value = (hi << 8) | lo;
     return value;
 }
 
-void CPU::LoadProgramFromArray(byte* program, unsigned int size) {
-    for (int i = 0; i < size; i++) {
-        memory[0x0600 + i] = program[i];
+// Loads a program from an array into the CPU it's memory at <address> (default 0x0600).
+void CPU::LoadProgramFromArray(byte* program, unsigned int size, int address) {
+    for (unsigned int i = 0; i < size; i++) {
+        memory[address + i] = program[i];
     }
 }
 
+// Runs the program in memory for <cycles> cycles.
 void CPU::Execute(unsigned int cycles) {
     while (cycles > 0) {
         byte instruction = ReadNextByte();
@@ -94,9 +101,9 @@ void CPU::Execute(unsigned int cycles) {
     }
 }
 
+// Runs the program in memory until 0x00 is encountered.
 void CPU::Execute() {
     while (true) {
-        // We run until we encountar 0x00
         byte instruction = ReadNextByte();
         if (instruction == 0x00)
             return;
@@ -111,38 +118,52 @@ void CPU::Execute() {
     }
 }
 
-
 //
 // CPU Opcode Functions
 //
-void LDASetStatus(CPU* cpu) {
-    if (cpu->reg_a == 0) cpu->status |= STATUS_BIT_Z;
-    if ((cpu->reg_a & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set?
+
+// Sets the statusregister as required by LDA, LDX and LDY
+void LDSetStatus(CPU *cpu, byte const &reg)
+{
+    if (reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
+    if ((reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
 }
 
-void LDXSetStatus(CPU* cpu) {
-    if (cpu->reg_x == 0) cpu->status |= STATUS_BIT_Z;
-    if ((cpu->reg_x & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set?
-}
+/*
+// Since LDA, LDX and LDY do the same, basically, we could put them all in one function?
+// TODO: Implement
+int OP_LD_IMM(CPU* cpu, byte &reg)
+{
+    byte value = cpu->ReadNextByte();
+    reg = value;
 
-void LDYSetStatus(CPU* cpu) {
-    if (cpu->reg_y == 0) cpu->status |= STATUS_BIT_Z;
-    if ((cpu->reg_y & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set?
+    if (reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
+    if ((reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
 }
+*/
 
 int OP_LDA_IMM(CPU* cpu) {
     byte value = cpu->ReadNextByte();
     cpu->reg_a = value;
-    LDASetStatus(cpu);
+    LDSetStatus(cpu, cpu->reg_a);
     return 2;
 }
+
+int OP_LDX_IMM(CPU* cpu) {
+    byte value = cpu->ReadNextByte();
+    cpu->reg_x = value;
+    LDSetStatus(cpu, cpu->reg_x);
+    return 2;
+}
+
 
 int OP_LDA_ZP(CPU* cpu) {
     byte address = cpu->ReadNextByte();
     cpu->reg_a = cpu->memory[address];
-    LDASetStatus(cpu);
+    LDSetStatus(cpu, cpu->reg_a);
     return 2;
 }
+
 
 int OP_PHA_IMM(CPU* cpu) {
     cpu->memory[cpu->sp] = cpu->reg_a;
@@ -150,21 +171,13 @@ int OP_PHA_IMM(CPU* cpu) {
     return 3;
 }
 
+
 int OP_STA_ZP(CPU* cpu) {
     byte address = cpu->ReadNextByte();
     cpu->memory[address] = cpu->reg_a;
 
     return 3;
 }
-
-
-int OP_LDX_IMM(CPU* cpu) {
-    byte value = cpu->ReadNextByte();
-    cpu->reg_x = value;
-    LDXSetStatus(cpu);
-    return 2;
-}
-
 
 int OP_JMP_ABS(CPU* cpu) {
     word address = cpu->ReadNextWord();

@@ -4,23 +4,22 @@
 // Opcode lookup table
 opcode_table opcodes[] = {
     // Format:
-    //  { Opcode, Function, Cycles }
-
+    //  { Opcode, Function, Parameter, Cycles }
     // LDA
-    { 0xA9, OP_LDA_IMM, 2 },
-    { 0xA5, OP_LDA_ZP, 2 },
+    { 0xA9, OP_LDA_IMM, REG_A, 2 },
+    { 0xA5, OP_LDA_ZP, REG_A, 2 },
 
     // PHA
-    { 0x48, OP_PHA_IMM, 3 },
+    { 0x48, OP_PHA_IMM, REG_A, 3 },
 
     // STA
-    { 0x85, OP_STA_ZP, 3},
+    { 0x85, OP_STA_ZP, REG_A, 3},
 
     // LDX
-    { 0xA2, OP_LDX_IMM, 2 },
+    { 0xA2, OP_LDX_IMM, REG_X, 2 },
 
     // JMP
-    { 0x4C, OP_JMP_ABS, 3 },
+    { 0x4C, OP_JMP_ABS, REG_NONE, 3 },
 };
  
 
@@ -53,7 +52,7 @@ void CPU::ResetRegisters() {
     reg_y = 0;
     sp = 0x01FF;
     pc = 0x0600;
-    status = 0;
+    status = 0x0000000b;
 }
 
 // Initialize the CPU memory to all 0x00.
@@ -95,7 +94,7 @@ void CPU::Execute(unsigned int cycles) {
         for (int i = 0; i < sizeof(opcodes) / sizeof(opcode_table); i++)
         {
             if (opcodes[i].opcode == instruction) {
-                cycles -= opcodes[i].func(this);
+                cycles -= opcodes[i].func(this, opcodes[i].parameter);
             }
         }
     }
@@ -112,7 +111,7 @@ void CPU::Execute() {
         for (int i = 0; i < sizeof(opcodes) / sizeof(opcode_table); i++)
         {
             if (opcodes[i].opcode == instruction) {
-                opcodes[i].func(this);
+                opcodes[i].func(this, opcodes[i].parameter);
             }
         }
     }
@@ -142,14 +141,14 @@ int OP_LD_IMM(CPU* cpu, byte &reg)
 }
 */
 
-int OP_LDA_IMM(CPU* cpu) {
+int OP_LDA_IMM(CPU* cpu, byte param) {
     byte value = cpu->ReadNextByte();
     cpu->reg_a = value;
     LDSetStatus(cpu, cpu->reg_a);
     return 2;
 }
 
-int OP_LDX_IMM(CPU* cpu) {
+int OP_LDX_IMM(CPU* cpu, byte param) {
     byte value = cpu->ReadNextByte();
     cpu->reg_x = value;
     LDSetStatus(cpu, cpu->reg_x);
@@ -157,7 +156,7 @@ int OP_LDX_IMM(CPU* cpu) {
 }
 
 
-int OP_LDA_ZP(CPU* cpu) {
+int OP_LDA_ZP(CPU* cpu, byte param) {
     byte address = cpu->ReadNextByte();
     cpu->reg_a = cpu->memory[address];
     LDSetStatus(cpu, cpu->reg_a);
@@ -165,21 +164,20 @@ int OP_LDA_ZP(CPU* cpu) {
 }
 
 
-int OP_PHA_IMM(CPU* cpu) {
-    cpu->memory[cpu->sp] = cpu->reg_a;
-    cpu->sp--;
+int OP_PHA_IMM(CPU* cpu, byte param) {
+    cpu->memory[cpu->sp--] = cpu->reg_a;
     return 3;
 }
 
 
-int OP_STA_ZP(CPU* cpu) {
+int OP_STA_ZP(CPU* cpu, byte param) {
     byte address = cpu->ReadNextByte();
     cpu->memory[address] = cpu->reg_a;
 
     return 3;
 }
 
-int OP_JMP_ABS(CPU* cpu) {
+int OP_JMP_ABS(CPU* cpu, byte param) {
     word address = cpu->ReadNextWord();
     cpu->pc = address;
     return 3;

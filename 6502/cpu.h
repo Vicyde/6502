@@ -18,6 +18,7 @@ typedef unsigned int word;
 
 // Register identifier, for later use
 // TODO: Convert to enum
+#define REG_NONE    0
 #define REG_A       1
 #define REG_X       2
 #define REG_Y       4
@@ -59,21 +60,22 @@ public:
 
 // CPU Operations
 // LDA
-int OP_LDA_IMM(CPU* cpu);
-int OP_LDA_ZP(CPU* cpu);
+int OP_LDA_IMM(CPU* cpu, byte param);
+int OP_LDA_ZP(CPU* cpu, byte param);
 // PHA
-int OP_PHA_IMM(CPU* cpu);
+int OP_PHA_IMM(CPU* cpu, byte param);
 // STA
-int OP_STA_ZP(CPU* cpu);
+int OP_STA_ZP(CPU* cpu, byte param);
 // LDX
-int OP_LDX_IMM(CPU* cpu);
+int OP_LDX_IMM(CPU* cpu, byte param);
 // JMP
-int OP_JMP_ABS(CPU* cpu);
+int OP_JMP_ABS(CPU* cpu, byte param);
 
 
 struct opcode_table {
     byte opcode;
-    int (*func)(CPU*);
+    int (*func)(CPU*, byte);
+    byte parameter;
     unsigned int cycles;
 };
 

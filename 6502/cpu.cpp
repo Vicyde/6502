@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <string>
 #include "cpu.h"
 
 // Opcode lookup table
@@ -90,6 +91,12 @@ word CPU::ReadNextWord() {
 
 // Loads a program from an array into the CPU it's memory at <address> (default 0x0600).
 void CPU::LoadProgramFromArray(byte* program, unsigned int size, int address) {
+    if (address + size > MEM_SIZE) {
+        char ex[50];
+        std::snprintf(ex, 50, "program exceeds memory limit at %i. Max is %i.", address + size, MEM_SIZE);
+        throw std::string(ex);
+    }
+
     for (unsigned int i = 0; i < size; i++) {
         memory[address + i] = program[i];
     }

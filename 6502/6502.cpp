@@ -20,10 +20,17 @@ int main(int argc, char* argv[]) {
         0x48                // PHA      -- Push accumulator to the stack                        (LDA = 0x0A, $05 = 0x0A, stack[0] = 0x0A)
     };
 
-    cpu->LoadProgramFromArray(program, sizeof(program) / sizeof(byte));
+    try
+    {
+        cpu->LoadProgramFromArray(program, sizeof(program) / sizeof(byte));
 
-    cpu->Execute();
-    cpu->PrintRegisters();
+        cpu->Execute();
+        cpu->PrintRegisters();
+    }
+    catch (std::string str)
+    {
+        std::cout << str;
+    }
 
     delete cpu;
 

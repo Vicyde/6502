@@ -6,30 +6,42 @@
 opcode_table opcodes[] = {
     // Format:
     //  { Opcode, Function, Parameter, Cycles }
+    // JMP
+    { 0x4C, OP_JMP_ABS, REG_NONE },  // Absolute
+//  { 0x6C, OP_JMP_IN, REG_NONE },   // Indirect
+
     // LDA
-    { 0xA9, OP_LD_IMM, REG_A, 2 },
-    { 0xA5, OP_LD_ZP, REG_A, 3 },
-    { 0xAD, OP_LD_ABS, REG_A, 4 },
+    { 0xA9, OP_LD_IMM, REG_A },      // Immediate
+    { 0xA5, OP_LD_ZP, REG_A },       // ZeroPage
+//  { 0xB5, OP_LD_ZPX, REG_A },      // ZeroPage, X
+    { 0xAD, OP_LD_ABS, REG_A },      // Absolute
+//  { 0xBD, OP_LD_ABX, REG_A },      // Absolute, X
+//  { 0xB9, OP_LD_ABX, REG_A },      // Absolute, Y
+//  { 0xA1, OP_LD_INX, REG_A },      // Indirect, X
+//  { 0xB1, OP_LD_INY, REG_A },      // Indirect, Y
 
     // LDX
-    { 0xA2, OP_LD_IMM, REG_X, 2 },
-    { 0xA6, OP_LD_ZP, REG_X, 3 },
-    { 0xAE, OP_LD_ABS, REG_X, 4 },
+    { 0xA2, OP_LD_IMM, REG_X },      // Immediate
+    { 0xA6, OP_LD_ZP, REG_X },       // ZeroPage
+//  { 0xB6, OP_LD_ZPY, REG_X },      // ZeroPage, Y
+    { 0xAE, OP_LD_ABS, REG_X },      // Absolute
+//  { 0xBE, OP_LD_ABY, REG_X },      // Absolute, Y
 
     // LDY
-    { 0xA0, OP_LD_IMM, REG_Y, 2 },
-    { 0xA4, OP_LD_ZP, REG_Y, 3 },
-    { 0xAC, OP_LD_ABS, REG_Y, 4 },
+    { 0xA0, OP_LD_IMM, REG_Y },      // Immediate
+    { 0xA4, OP_LD_ZP, REG_Y },       // ZeroPage
+//  { 0xB4, OP_LD_ZPX, REG_Y },      // ZeroPage, X
+    { 0xAC, OP_LD_ABS, REG_Y },      // Absolute
+//  { 0xBC, OP_LD_ABX, REG_Y },      // Absolute, X
 
     // PHA
-    { 0x48, OP_PHA_IMM, REG_A, 3 },
+    { 0x48, OP_PHA_IMP, REG_A },     // Implied
+
+    // PLA
+    { 0x68, OP_PLA_IMP, REG_A },     // Implied
 
     // STA
-    { 0x85, OP_STA_ZP, REG_A, 3},
-
-
-    // JMP
-    { 0x4C, OP_JMP_ABS, REG_NONE, 3 },
+    { 0x85, OP_STA_ZP, REG_A },       // ZeroPage
 };
  
 
@@ -74,8 +86,7 @@ void CPU::ClearMemory() {
 
 // Reads the next byte in memory and increases the program counter.
 byte CPU::ReadNextByte() {
-    byte data = memory[pc];
-    pc++;
+    byte data = memory[pc++];
     return data;
 }
 
@@ -137,8 +148,15 @@ void CPU::Execute() {
 // CPU Opcode Functions
 //
 
+// Jump
+int OP_JMP_ABS(CPU* cpu, byte param) {
+    word address = cpu->ReadNextWord();
+    cpu->pc = address;
+    return 3;
+}
+
 // Sets the statusregister as required by LDA, LDX and LDY
-void LDSetStatus(CPU *cpu, byte const &reg)
+void LDSetStatus(CPU *cpu, byte &reg)
 {
     if (reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
     if ((reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
@@ -158,12 +176,10 @@ int OP_LD_IMM(CPU* cpu, byte param)
 
     *reg = value;
 
-    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
-    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+    LDSetStatus(cpu, *reg);
 
     return 2;
 }
-
 
 int OP_LD_ZP(CPU* cpu, byte param) {
     byte address = cpu->ReadNextByte();
@@ -176,8 +192,7 @@ int OP_LD_ZP(CPU* cpu, byte param) {
 
     *reg = cpu->memory[address];
 
-    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
-    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+    LDSetStatus(cpu, *reg);
 
     return 3;
 }
@@ -193,41 +208,22 @@ int OP_LD_ABS(CPU* cpu, byte param) {
 
     *reg = cpu->memory[address];
 
-    if (*reg == 0) cpu->status |= STATUS_BIT_Z;            // Register is 0? (Z bit)
-    if ((*reg & 0x40) > 0) cpu->status |= STATUS_BIT_N;    // Bit 7 set? (N bit)
+    LDSetStatus(cpu, *reg);
 
     return 4;
 }
 
-int OP_LDA_IMM(CPU* cpu, byte param) {
-    byte value = cpu->ReadNextByte();
-    cpu->reg_a = value;
-    LDSetStatus(cpu, cpu->reg_a);
-    return 2;
-}
-
-
-int OP_LDX_IMM(CPU* cpu, byte param) {
-    byte value = cpu->ReadNextByte();
-    cpu->reg_x = value;
-    LDSetStatus(cpu, cpu->reg_x);
-    return 2;
-}
-
-
-int OP_LDA_ZP(CPU* cpu, byte param) {
-    byte address = cpu->ReadNextByte();
-    cpu->reg_a = cpu->memory[address];
-    LDSetStatus(cpu, cpu->reg_a);
-    return 2;
-}
-
-
-int OP_PHA_IMM(CPU* cpu, byte param) {
+int OP_PHA_IMP(CPU* cpu, byte param) {
     cpu->memory[cpu->sp--] = cpu->reg_a;
     return 3;
 }
 
+
+int OP_PLA_IMP(CPU* cpu, byte param) {
+    cpu->reg_a = cpu->memory[++cpu->sp];
+    LDSetStatus(cpu, cpu->reg_a);
+    return 4;
+}
 
 int OP_STA_ZP(CPU* cpu, byte param) {
     byte address = cpu->ReadNextByte();
@@ -236,8 +232,3 @@ int OP_STA_ZP(CPU* cpu, byte param) {
     return 3;
 }
 
-int OP_JMP_ABS(CPU* cpu, byte param) {
-    word address = cpu->ReadNextWord();
-    cpu->pc = address;
-    return 3;
-}

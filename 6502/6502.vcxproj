@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="6502.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="cpu.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -6,6 +6,18 @@
 opcode_table opcodes[] = {
     // Format:
     //  { Opcode, Function, Parameter, Cycles }
+    // CLC
+    { 0x18, OP_CLEAR_BIT, STATUS_BIT_C },
+
+    // CLD
+    { 0xD8, OP_CLEAR_BIT, STATUS_BIT_D },
+
+    // CLI
+    { 0x58, OP_CLEAR_BIT, STATUS_BIT_I },
+
+    // CLV
+    { 0xB8, OP_CLEAR_BIT, STATUS_BIT_V },
+
     // JMP
     { 0x4C, OP_JMP_ABS, REG_NONE },  // Absolute
 //  { 0x6C, OP_JMP_IN, REG_NONE },   // Indirect
@@ -147,6 +159,11 @@ void CPU::Execute() {
 //
 // CPU Opcode Functions
 //
+// Clear bit
+int OP_CLEAR_BIT(CPU* cpu, byte param) {
+    cpu->status &= ~param;
+    return 2;
+}
 
 // Jump
 int OP_JMP_ABS(CPU* cpu, byte param) {

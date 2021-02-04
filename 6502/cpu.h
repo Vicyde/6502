@@ -8,13 +8,13 @@ typedef unsigned int word;
 
 // Status register bits
 // TODO: Convert to enum
-#define STATUS_BIT_N 1
-#define STATUS_BIT_V 2
-#define STATUS_BIT_B 4
-#define STATUS_BIT_D 8
-#define STATUS_BIT_I 16
-#define STATUS_BIT_Z 32
-#define STATUS_BIT_C 64
+#define STATUS_BIT_N  128
+#define STATUS_BIT_V   64
+#define STATUS_BIT_B   16
+#define STATUS_BIT_D    8
+#define STATUS_BIT_I    4
+#define STATUS_BIT_Z    2
+#define STATUS_BIT_C    1
 
 // Register identifier, for later use
 // TODO: Convert to enum
@@ -33,7 +33,7 @@ public:
     byte reg_a;
     byte reg_x;
     byte reg_y;
-    byte status; // C Z I D B V N 
+    byte status; // N V - B D I Z C
     word sp;
     word pc;
 
@@ -69,10 +69,13 @@ public:
 //BRK	....	break / interrupt
 //BVC	....branch on overflow clear
 //BVS	....branch on overflow set
+
 //CLC	....clear carry
 //CLD	....clear decimal
 //CLI	....clear interrupt disable
 //CLV	....clear overflow
+int OP_CLEAR_BIT(CPU* cpu, byte param);
+
 //CMP	....compare(with accumulator)
 //CPX	....compare with X
 //CPY	....compare with Y

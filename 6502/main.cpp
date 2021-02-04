@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
     // the class.
     CPU *cpu = new CPU();
 
-
+    /*
     // Test program
     byte program[] = {
         0xA9, 0x42, // LDA #$42
@@ -15,6 +15,20 @@ int main(int argc, char* argv[]) {
         0xA9, 0x00, // LDA #$00
         0x68        // PLA
     };
+    */
+
+    cpu->status = 0xFF;
+
+    byte program[] = {
+        0x18, // Clear Carry
+        0x58, // Clear Interrupt
+        0xB8, // Clear Overflow
+        0xD8  // Clear Decimal
+    };
+
+    // At this point status should be
+    // N V - B D I Z C
+    // 1 0 1 1 0 0 1 0 (0xB2)
 
     try
     {
